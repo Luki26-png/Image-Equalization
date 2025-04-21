@@ -104,3 +104,37 @@ end
 function plot_histogram_specification(histogram_table::DataFrame)
     bar(histogram_table.map, histogram_table.pdf, xlabel="Lightness (x)", ylabel="Frequency (y)", title="Histogram Specification", legend=false)
 end
+
+# Fungsi untuk membangun gambar yang telah di-equalize
+function construct_equalized_img(original_img, equalized_table::DataFrame)
+    original_img = Lab.(original_img)
+    img_row, img_col = size(original_img)
+    img_result = Array{Lab{Float32}, 2}(undef, img_row, img_col)
+
+    for x in 1:img_row, y in 1:img_col
+        current_l = Int(round(original_img[x, y].l))
+        current_a = original_img[x, y].a
+        current_b = original_img[x, y].b
+        current_l = equalized_table.new_intensity[current_l + 1] * 100
+        img_result[x, y] = Lab{Float32}(Float32(current_l), current_a, current_b)
+    end
+
+    return RGB.(img_result)
+end
+
+# Fungsi untuk membangun gambar berdasarkan spesifikasi
+function construct_specification_img(original_img, specification_table::DataFrame)
+    original_img = Lab.(original_img)
+    img_row, img_col = size(original_img)
+    img_result = Array{Lab{Float32}, 2}(undef, img_row, img_col)
+
+    for x in 1:img_row, y in 1:img_col
+        current_l = Int(round(original_img[x, y].l))
+        current_a = original_img[x, y].a
+        current_b = original_img[x, y].b
+        current_l = specification_table.map[current_l + 1] * 100
+        img_result[x, y] = Lab{Float32}(Float32(current_l), current_a, current_b)
+    end
+
+    return RGB.(img_result)
+end
