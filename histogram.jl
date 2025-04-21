@@ -89,3 +89,18 @@ function histogram_equalization_table(img)
     
     return Dict("original" => histogram_equalization, "hasil" => equalized_table, "cdf" => cdf_table)
 end
+
+# Fungsi untuk memplot histogram original
+function plot_histogram_original(histogram_table::DataFrame)
+    bar(histogram_table.rₖ, histogram_table.pdf, xlabel="Lightness (x)", ylabel="Frequency (y)", title="Histogram Original", legend=false)
+end
+
+# Fungsi untuk memplot histogram hasil
+function plot_histogram_result(histogram_table::DataFrame)
+    bar(histogram_table.new_intensity, histogram_table.pdf, xlabel="Lightness (x)", ylabel="Frequency (y)", title="Histogram Equalization", legend=false)
+end
+
+# Fungsi untuk memplot histogram spesifikasi
+function plot_histogram_specification(histogram_table::DataFrame)
+    bar(histogram_table.map, histogram_table.pdf, xlabel="Lightness (x)", ylabel="Frequency (y)", title="Histogram Specification", legend=false)
+end
