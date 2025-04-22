@@ -138,3 +138,98 @@ function construct_specification_img(original_img, specification_table::DataFram
 
     return RGB.(img_result)
 end
+
+# Fungsi untuk melakukan histogram spesifikasi
+function histogram_specification_table(original_img, img_ref)
+    img_histogram_table = histogram_equalization_table(original_img)
+    ref_img_histogram_table = histogram_equalization_table(img_ref)
+
+    # Do mapping from original to specification
+    mapping_table = DataFrame("original" => img_histogram_table["cdf"].Tᵣ, "reference" => ref_img_histogram_table["cdf"].Tᵣ)
+
+    function map_arrays(original, specified)
+        result = Int[]  # Initialize an empty array to store the result
+
+        for value in original
+            closest_value = specified[1]
+            closest_index = 1
+            min_diff = abs(value - closest_value)
+
+            for (i, specified_value) in enumerate(specified)
+                diff = abs(value - specified_value)
+                if diff < min_diff || (diff == min_diff && i < closest_index)
+                    closest_value = specified_value
+                    closest_index = i
+                    min_diff = diff
+                end
+            end
+
+            push!(result, closest_index - 1)  # Subtract 1 to convert to 0-based index
+        end
+
+        return result
+    end
+
+    result = map_arrays(mapping_table.original, mapping_table.reference)
+    mapping_table.map = result ./ 100
+
+    # table kosong untuk menyimpan hasil histogram specification
+    specification_result = DataFrame()
+    sₖ = ["s$i" for i in 0:100]
+    original_pdf = img_histogram_table["original"].pdf
+    pdf = zeros(Float64, length(original_pdf))
+    global temp = 0
+
+    for current in 1:length(mapping_table.map) - 1
+        current_r = mapping_table.map[current]
+        next_r = mapping_table.map[current + 1]
+
+        if current_r == next_r
+            global temp += original_pdf[current]
+            continue
+        end
+
+        global temp += original_pdf[current]
+        pdf[current] = temp
+        global temp = 0
+    end
+
+    # Update nₖ untuk elemen terakhir
+    if mapping_table.map[101] == mapping_table.map[100]
+        pdf[101] = original_pdf[101] + pdf[100]
+        pdf[100] = 0
+    else
+        pdf[101] = original_pdf[101]
+    end
+
+    specification_result.sₖ = sₖ
+    specification_result.map = result ./ 100
+    specification_result.pdf = pdf
+
+    return specification_result
+end
+
+# Load original image
+img = load("pelican.jpg")
+
+#img_equalization = histogram_equalization_table(img)
+
+#plot_histogram_original(img_equalization["original"])
+
+#plot_histogram_result(img_equalization["hasil"])
+
+#equalized_img = construct_equalized_img(img, img_equalization["hasil"])
+#imshow(equalized_img)
+
+#Load reference image
+img_ref = load("ref_img.jpg")
+
+# Proses histogram spesifikasi
+specification_result = histogram_specification_table(img, img_ref)
+
+# Plot the specification histogram
+plot_histogram_specification(specification_result)
+
+# Create the image after doing histogram specification
+img_after_specification = construct_specification_img(img, specification_result)
+imshow(img_after_specification)
